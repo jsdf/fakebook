@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fakebook"
+version = "0.1.0"
+description = "Musical analysis pipeline for mixed, computer-produced pop/dance music — deterministic theory kernel + LLM interpretation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "fakebook contributors" }]
+keywords = ["music-information-retrieval", "harmony", "voicing", "music21", "chord-scale"]
+
+# Core dependencies: everything needed to run the DETERMINISTIC kernel, the
+# schema/contract layer, assembly and validation. These are intentionally
+# light so the theory kernel runs (and is tested) without GPUs or model weights.
+dependencies = [
+    "music21>=9.1",
+    "numpy>=1.24",
+    "pydantic>=2.5",
+    "jsonschema>=4.19",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Audio I/O + source separation (Phase 1). Heavy; only needed to go from a
+# real audio file to stems.
+audio = [
+    "librosa>=0.10",
+    "soundfile>=0.12",
+    "demucs>=4.0",
+    "audio-separator>=0.17",
+]
+# MIR foundation-model backbone + light heads (Phase 2).
+mir = [
+    "torch>=2.1",
+    "transformers>=4.40",
+    "torchaudio>=2.1",
+    "madmom>=0.16.1",
+]
+# Salience / multipitch extraction for the harmony stage (Phase 3).
+harmony = [
+    "basic-pitch>=0.3",
+]
+# LLM interpretation stage (Phase 5).
+llm = [
+    "anthropic>=0.40",
+]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "mypy>=1.8",
+    "ruff>=0.5",
+]
+# Convenience: the full audio→interpretation pipeline.
+all = [
+    "fakebook[audio,mir,harmony,llm]",
+]
+
+[project.scripts]
+fakebook = "fakebook.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+fakebook = ["py.typed", "schema/*.json", "data/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "audio: requires the [audio] extra (librosa/demucs)",
+    "mir: requires the [mir] extra (torch/transformers)",
+    "harmony_dsp: requires the [harmony] extra (basic-pitch)",
+    "llm: requires the [llm] extra and an API key",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = true
+ignore_missing_imports = true

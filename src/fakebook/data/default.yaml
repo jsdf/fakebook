@@ -1,0 +1,58 @@
+# Default configuration for the fakebook musical-analysis pipeline.
+# Override any subtree via a user YAML passed to Config.load(), or via
+# FAKEBOOK_* environment variables (see fakebook.config).
+
+ingest:
+  target_sample_rate: 44100      # working rate for separation
+  mono: false                    # keep stereo into separation
+  segment_max_s: 30.0            # window long clips to this length
+  # Later stages resample as needed (MERT wants 24 kHz, basic-pitch 22.05 kHz).
+
+separation:
+  backend: demucs                # demucs | passthrough
+  demucs_model: htdemucs_ft
+  vocal_model: bs_roformer       # BS-Roformer via audio-separator/UVR weights
+  ensemble: false                # blend instrumental models to reduce artifacts
+  # The stem the harmony stage consumes. HTDemucs emits vocals/drums/bass/other;
+  # "other" carries the harmonic/synth content.
+  harmonic_stem: other
+  device: auto                   # auto | cpu | cuda
+
+mir:
+  backbone: mert                 # mert | musicfm | muq | omar_rq | none
+  backbone_model: m-a-p/MERT-v1-95M
+  backbone_sample_rate: 24000
+  fallback: librosa              # per-task fallback when backbone unavailable
+  beat_tracker: madmom           # madmom | librosa
+  structure: msaf                # msaf | allinone | librosa
+  compute_coarse_acr: true       # lossy context only
+
+harmony:
+  salience: basic_pitch          # basic_pitch | nnls_chroma
+  salience_sample_rate: 22050
+  # Segmentation of the harmonic timeline into chord spans.
+  segment_by: downbeat           # downbeat | harmonic_change | fixed
+  fixed_segment_s: 2.0
+  # Pitch-class thresholding from the salience matrix.
+  salience_threshold: 0.15       # relative to per-segment max
+  min_pc_energy: 0.08            # drop pcs below this share of segment energy
+  max_pitch_classes: 7
+  # Kernel enumeration limits.
+  max_chord_interpretations: 5
+  max_scale_candidates: 5
+  detect_quartal: true
+  detect_upper_structure: true
+
+timbre:
+  enabled: false                 # Branch B — stub only for now
+
+interpret:
+  model: claude-opus-4-8
+  max_tokens: 4096
+  temperature: 0.2
+  # Guardrail: the model may only select among enumerated candidates.
+  enforce_grounding: true
+
+assemble:
+  validate: true                 # validate against ir.schema.json
+  coherence_checks: true         # segment/downbeat alignment, pc-set stability

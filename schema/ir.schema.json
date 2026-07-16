@@ -1,0 +1,534 @@
+{
+  "$defs": {
+    "Beat": {
+      "additionalProperties": false,
+      "properties": {
+        "t": {
+          "default": 0.0,
+          "title": "T",
+          "type": "number"
+        },
+        "is_downbeat": {
+          "default": false,
+          "title": "Is Downbeat",
+          "type": "boolean"
+        },
+        "bar": {
+          "default": 0,
+          "title": "Bar",
+          "type": "integer"
+        }
+      },
+      "title": "Beat",
+      "type": "object"
+    },
+    "ChordInterpretation": {
+      "additionalProperties": false,
+      "description": "One enumerated, deterministic reading. The guardrail unit.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "root": {
+          "default": "",
+          "title": "Root",
+          "type": "string"
+        },
+        "quality": {
+          "default": "",
+          "title": "Quality",
+          "type": "string"
+        },
+        "score": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Score",
+          "type": "number"
+        },
+        "chord_tones": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Chord Tones",
+          "type": "array"
+        },
+        "tensions": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Tensions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ChordInterpretation",
+      "type": "object"
+    },
+    "Global": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/Key"
+        },
+        "tempo_bpm": {
+          "default": 0.0,
+          "title": "Tempo Bpm",
+          "type": "number"
+        },
+        "time_signature": {
+          "default": "",
+          "title": "Time Signature",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "mood": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Mood",
+          "type": "array"
+        }
+      },
+      "title": "Global",
+      "type": "object"
+    },
+    "Interpretation": {
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "default": "",
+          "title": "Summary",
+          "type": "string"
+        },
+        "segments": {
+          "items": {
+            "$ref": "#/$defs/InterpretedSegment"
+          },
+          "title": "Segments",
+          "type": "array"
+        },
+        "model": {
+          "default": "",
+          "title": "Model",
+          "type": "string"
+        },
+        "grounded": {
+          "default": true,
+          "title": "Grounded",
+          "type": "boolean"
+        }
+      },
+      "title": "Interpretation",
+      "type": "object"
+    },
+    "InterpretedSegment": {
+      "additionalProperties": false,
+      "description": "One LLM reading, grounded in a segment + its enumerated candidates.",
+      "properties": {
+        "segment_index": {
+          "title": "Segment Index",
+          "type": "integer"
+        },
+        "chosen_interpretation": {
+          "default": "",
+          "title": "Chosen Interpretation",
+          "type": "string"
+        },
+        "rationale": {
+          "default": "",
+          "title": "Rationale",
+          "type": "string"
+        },
+        "competing_hearings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Competing Hearings",
+          "type": "array"
+        },
+        "idioms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Idioms",
+          "type": "array"
+        },
+        "unsupported": {
+          "default": false,
+          "title": "Unsupported",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "segment_index"
+      ],
+      "title": "InterpretedSegment",
+      "type": "object"
+    },
+    "Key": {
+      "additionalProperties": false,
+      "properties": {
+        "tonic": {
+          "default": "",
+          "title": "Tonic",
+          "type": "string"
+        },
+        "mode": {
+          "default": "",
+          "title": "Mode",
+          "type": "string"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        }
+      },
+      "title": "Key",
+      "type": "object"
+    },
+    "Meta": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_s": {
+          "default": 0.0,
+          "title": "Duration S",
+          "type": "number"
+        },
+        "sample_rate": {
+          "default": 0,
+          "title": "Sample Rate",
+          "type": "integer"
+        },
+        "source": {
+          "default": "",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "title": "Meta",
+      "type": "object"
+    },
+    "PcSet": {
+      "additionalProperties": false,
+      "description": "Pitch-class-set descriptors (music21 terminology).",
+      "properties": {
+        "prime_form": {
+          "default": "",
+          "title": "Prime Form",
+          "type": "string"
+        },
+        "forte": {
+          "default": "",
+          "title": "Forte",
+          "type": "string"
+        },
+        "interval_vector": {
+          "default": "",
+          "title": "Interval Vector",
+          "type": "string"
+        },
+        "normal_order": {
+          "default": "",
+          "title": "Normal Order",
+          "type": "string"
+        }
+      },
+      "title": "PcSet",
+      "type": "object"
+    },
+    "ScaleCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "fit": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Fit",
+          "type": "number"
+        },
+        "out_of_scale": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Out Of Scale",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ScaleCandidate",
+      "type": "object"
+    },
+    "Section": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "default": "",
+          "title": "Label",
+          "type": "string"
+        },
+        "start_s": {
+          "default": 0.0,
+          "title": "Start S",
+          "type": "number"
+        },
+        "end_s": {
+          "default": 0.0,
+          "title": "End S",
+          "type": "number"
+        }
+      },
+      "title": "Section",
+      "type": "object"
+    },
+    "Segment": {
+      "additionalProperties": false,
+      "properties": {
+        "start_s": {
+          "default": 0.0,
+          "title": "Start S",
+          "type": "number"
+        },
+        "end_s": {
+          "default": 0.0,
+          "title": "End S",
+          "type": "number"
+        },
+        "bar": {
+          "default": 0,
+          "title": "Bar",
+          "type": "integer"
+        },
+        "pitch_classes": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pitch Classes",
+          "type": "array"
+        },
+        "spelled_candidates": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Spelled Candidates",
+          "type": "array"
+        },
+        "pc_set": {
+          "$ref": "#/$defs/PcSet"
+        },
+        "chord_interpretations": {
+          "items": {
+            "$ref": "#/$defs/ChordInterpretation"
+          },
+          "title": "Chord Interpretations",
+          "type": "array"
+        },
+        "scale_candidates": {
+          "items": {
+            "$ref": "#/$defs/ScaleCandidate"
+          },
+          "title": "Scale Candidates",
+          "type": "array"
+        },
+        "voicing": {
+          "$ref": "#/$defs/Voicing"
+        },
+        "coarse_acr": {
+          "default": "",
+          "title": "Coarse Acr",
+          "type": "string"
+        },
+        "timbre": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimbreDescriptor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Segment",
+      "type": "object"
+    },
+    "TimbreDescriptor": {
+      "additionalProperties": false,
+      "description": "Branch B (sound-design) descriptor. Populated by the ``timbre`` stub.",
+      "properties": {
+        "spectral_centroid_hz": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Spectral Centroid Hz"
+        },
+        "spectral_bandwidth_hz": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Spectral Bandwidth Hz"
+        },
+        "inharmonicity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inharmonicity"
+        },
+        "detune_cents": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detune Cents"
+        },
+        "n_partials": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N Partials"
+        },
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        }
+      },
+      "title": "TimbreDescriptor",
+      "type": "object"
+    },
+    "Voicing": {
+      "additionalProperties": false,
+      "properties": {
+        "stacking": {
+          "default": "unknown",
+          "enum": [
+            "tertian",
+            "quartal",
+            "cluster",
+            "unknown"
+          ],
+          "title": "Stacking",
+          "type": "string"
+        },
+        "upper_structure": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Upper Structure"
+        },
+        "omitted": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Omitted",
+          "type": "array"
+        },
+        "inversion": {
+          "default": "",
+          "title": "Inversion",
+          "type": "string"
+        }
+      },
+      "title": "Voicing",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The full IR document. This is what ``assemble`` validates and emits.",
+  "properties": {
+    "meta": {
+      "$ref": "#/$defs/Meta"
+    },
+    "global": {
+      "$ref": "#/$defs/Global"
+    },
+    "beats": {
+      "items": {
+        "$ref": "#/$defs/Beat"
+      },
+      "title": "Beats",
+      "type": "array"
+    },
+    "sections": {
+      "items": {
+        "$ref": "#/$defs/Section"
+      },
+      "title": "Sections",
+      "type": "array"
+    },
+    "segments": {
+      "items": {
+        "$ref": "#/$defs/Segment"
+      },
+      "title": "Segments",
+      "type": "array"
+    },
+    "interpretation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Interpretation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "AnalysisDocument",
+  "type": "object"
+}

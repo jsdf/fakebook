@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Model weights / caches (never commit — pulled on demand)
+*.pt
+*.pth
+*.ckpt
+.cache/
+models/weights/
+
+# Local audio / analysis artifacts
+*.wav
+*.mp3
+*.flac
+*.m4a
+!tests/fixtures/**
+outputs/
+*.analysis.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
