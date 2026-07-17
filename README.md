@@ -179,11 +179,19 @@ Ground truth is scarce for this material, so validation is layered:
 - **Audio heads** — intended checks are key/tempo against known tracks and
   beat-tracking F-measure on annotated clips (require the `audio`/`mir` extras).
 
+- **Audio integration** — `tests/test_integration_audio.py` renders known chords
+  to a signal and drives the *real* front-end (librosa CQT chroma → kernel, the
+  MIR key head, and a full `analyze_file` from a written WAV), checking that the
+  pitch content is actually recovered, that it survives heavy broadband noise,
+  and pinning known chroma limitations (a bright single tone leaks its fifth).
+  These need the `audio` extra and skip cleanly without it.
+
 The LLM layer's output is treated as interpretation, not fact; it inherits, and
 must not exceed, the certainty of the kernel.
 
 ```bash
-pytest          # 60+ tests, no heavy deps required
+pytest                      # core suite — no heavy deps required
+pip install -e '.[audio]' && pytest   # + real-audio integration tests
 ```
 
 ---
