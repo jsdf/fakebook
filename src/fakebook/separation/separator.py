@@ -42,6 +42,34 @@ class PassthroughSeparator:
         return Stems(harmonic=clip, mix=clip)
 
 
+class HpssSeparator:
+    """Lightweight harmonic/percussive separation (librosa HPSS).
+
+    Not a full source separator — it splits sustained (harmonic) content from
+    transient (percussive) content, which removes drum smear before chroma
+    without needing torch/demucs weights. A pragmatic honoring of principle 5
+    when the ``mir``/demucs stack is unavailable. The harmonic component becomes
+    the harmonic stem; the percussive component is exposed as ``drums``.
+    """
+
+    lossy = True  # partial separation only (no bass/vocal isolation)
+
+    def __init__(self, config: Config | None = None):
+        self.config = config or Config.default()
+        self.margin = float(self.config.get("separation.hpss_margin", 3.0))
+
+    def separate(self, clip: AudioClip) -> Stems:
+        librosa = require("librosa", feature="HPSS separation", extra="audio")
+        harm_ch, perc_ch = [], []
+        for ch in range(clip.n_channels):
+            h, p = librosa.effects.hpss(clip.samples[ch], margin=self.margin)
+            harm_ch.append(h)
+            perc_ch.append(p)
+        harmonic = AudioClip(np.stack(harm_ch).astype(np.float32), clip.sample_rate, clip.source)
+        drums = AudioClip(np.stack(perc_ch).astype(np.float32), clip.sample_rate, clip.source)
+        return Stems(harmonic=harmonic, drums=drums, mix=clip)
+
+
 class DemucsSeparator:
     """HTDemucs FT (+ optional BS-Roformer vocal) separator."""
 
@@ -123,12 +151,21 @@ class DemucsSeparator:
 
 
 def build_separator(config: Config | None = None):
-    """Choose a separator from config, falling back to passthrough when needed."""
+    """Choose a separator from config, degrading gracefully when deps are absent.
+
+    Preference when the requested backend is unavailable: HPSS (if librosa is
+    present) over raw passthrough, since removing drum smear meaningfully helps
+    chroma on real mixes.
+    """
     config = config or Config.default()
     backend = config.get("separation.backend", "demucs")
     if backend == "passthrough":
         return PassthroughSeparator(config)
+    if backend == "hpss":
+        return HpssSeparator(config) if is_available("librosa") else PassthroughSeparator(config)
     if backend == "demucs" and is_available("demucs") and is_available("torch"):
         return DemucsSeparator(config)
-    # Requested a real backend but deps are missing → degrade, don't crash.
+    # Requested a real backend but deps are missing → degrade sensibly.
+    if is_available("librosa"):
+        return HpssSeparator(config)
     return PassthroughSeparator(config)

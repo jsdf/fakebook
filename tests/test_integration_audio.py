@@ -203,3 +203,38 @@ def test_full_pipeline_from_wav(tmp_path, monkeypatch):
     assert "Cm7" in recovered and "Fm7" in recovered, recovered
     # document already passed JSON-Schema validation inside assemble; sanity-check meta
     assert abs(doc.meta.duration_s - 4.0) < 0.05
+
+
+# --------------------------------------------------------------------------- #
+# HPSS separator: recovers harmony after removing percussion                    #
+# --------------------------------------------------------------------------- #
+def test_hpss_separator_keeps_harmony_and_still_names_chords():
+    from fakebook.separation import HpssSeparator
+
+    # a chord + additive broadband "percussion" bursts; HPSS should keep the
+    # sustained harmonic content and the kernel should still name the chord.
+    chord = render_chord(CHORDS["Cm7"], 2.0)
+    rng = np.random.default_rng(0)
+    perc = np.zeros_like(chord)
+    for onset in range(0, len(chord), SR // 4):  # transient every 1/4 s
+        perc[onset : onset + 200] += rng.standard_normal(min(200, len(chord) - onset))
+    mix = (chord + 0.3 * perc).astype(np.float32)
+    clip = AudioClip(mix, SR, "mix")
+
+    sep = HpssSeparator(Config.default())
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        stems = sep.separate(clip)
+        obs = ChromaSalience(Config.default()).observe(stems.harmonic, [ChordSpan(0.0, 2.0, 1)])
+    assert stems.drums is not None  # percussive component exposed
+    seg = HarmonyKernel().enumerate_segment(obs[0])
+    assert seg.chord_interpretations[0].name in ("Cm7", "Eb6")
+
+
+def test_build_separator_prefers_hpss_when_librosa_present():
+    from fakebook.separation import HpssSeparator, build_separator
+
+    # default backend is demucs; with torch/demucs absent but librosa present,
+    # build_separator should degrade to HPSS rather than raw passthrough.
+    sep = build_separator(Config.default())
+    assert isinstance(sep, HpssSeparator)

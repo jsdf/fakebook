@@ -201,7 +201,7 @@ pip install -e '.[audio]' && pytest   # + real-audio integration tests
 | Phase | Scope                                             | Status |
 |-------|---------------------------------------------------|--------|
 | 0     | scaffold, config, IR schema, typed contracts      | ✅ |
-| 1     | `ingest/` + `separation/`                         | ✅ (demucs + passthrough fallback) |
+| 1     | `ingest/` + `separation/`                         | ✅ (demucs; HPSS + passthrough fallbacks) |
 | 2     | `mir/` heads → global/beats/sections              | ✅ (librosa heads + MERT backbone seam) |
 | 3     | `harmony/` kernel (Branch A)                      | ✅ (fully tested) |
 | 4     | `assemble/` → validated JSON                      | ✅ |
