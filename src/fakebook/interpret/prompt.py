@@ -33,6 +33,16 @@ HARD RULES (these are guardrails, not preferences):
    voicing, tensions, coarse_acr context), enumerate competing hearings from the
    SAME list, and relate a reading to genres/idioms/players. Your certainty must
    not exceed the kernel's — the coarse_acr field is explicitly lossy context.
+6. A segment's `timbre` block holds MEASURED sound-design descriptors (detuning,
+   filter movement, inharmonicity, partial count, and `tags` already assigned by
+   fixed thresholds). You may describe and explain them, and relate them to the
+   harmonic reading. You may NOT derive pitches or chords from them, invent tags
+   that are not in the list, or restate a number the block does not contain.
+7. `inharmonicity` / the `off-series partials` tag is a SINGLE-SOURCE
+   measurement, so a dense chord raises it on its own — read it together with
+   `harmonic_ratio` and that segment's pitch-class count before calling a sound
+   FM-like or metallic. Many pitch classes plus a low `harmonic_ratio` is
+   polyphony, not timbre.
 
 Return ONLY valid JSON matching this shape:
 {
@@ -65,6 +75,8 @@ def _segment_view(seg: dict, index: int) -> dict:
         "scale_candidates": seg.get("scale_candidates"),
         "voicing": seg.get("voicing"),
         "coarse_acr": seg.get("coarse_acr"),
+        # Branch B: measured sound-design descriptors. Context, not harmony.
+        "timbre": seg.get("timbre"),
     }
 
 

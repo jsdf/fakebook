@@ -11,14 +11,13 @@ from fakebook.assemble import Assembler
 from fakebook.audio import AudioClip, Stems
 from fakebook.config import Config
 from fakebook.contracts import (
-    ChordSpan,
     MirResult,
     PitchClassObservation,
 )
 from fakebook.harmony import HarmonyKernel
 from fakebook.pipeline import Pipeline
 from fakebook.schema import Beat, Global, Key
-from fakebook.timbre import TimbreStub
+from fakebook.timbre import SpectralTimbre, TimbreStub
 
 
 class FakeIngestor:
@@ -88,6 +87,38 @@ def test_pipeline_segments_align_to_downbeats():
     assert doc.segments[1].start_s == 2.0
     report = pipe.assembler.last_report
     assert report is not None and report.ok, report.warnings if report else None
+
+
+class AudibleIngestor:
+    """Four seconds of a detuned unison, so Branch B has something to measure."""
+
+    def load(self, path):
+        t = np.arange(44100 * 4) / 44100
+        y = np.zeros_like(t)
+        for detune_cents in (-20.0, -10.0, 0.0, 10.0, 20.0):
+            f = 440.0 * 2 ** (detune_cents / 1200)
+            for k in range(1, 9):
+                y += np.sin(2 * np.pi * k * f * t) / k
+        return AudioClip((y / 40).astype(np.float32), 44100, path)
+
+
+def test_pipeline_fills_branch_b_beside_branch_a():
+    config = Config.default()
+    pipe = _pipeline(config)
+    pipe.ingestor = AudibleIngestor()
+    pipe.timbre = SpectralTimbre(config)
+    doc = pipe.analyze_file("fake.wav")
+    for seg in doc.segments:
+        assert seg.chord_interpretations  # Branch A still enumerated
+        assert seg.timbre is not None
+        assert seg.timbre.spectral_centroid_hz > 0
+        assert seg.timbre.n_partials > 1
+        assert seg.timbre.detune_cents > 0  # the unison is seen as a unison
+        assert "detuned unison (supersaw-like)" in seg.timbre.tags
+
+
+def test_from_config_enables_branch_b_by_default():
+    assert isinstance(Pipeline.from_config(Config.default()).timbre, SpectralTimbre)
 
 
 def test_pipeline_with_timbre_stub_fills_slot():

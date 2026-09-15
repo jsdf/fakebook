@@ -1,12 +1,14 @@
-"""Timbre stage (Branch B — sound-design). Stub behind a stable interface.
+"""Timbre stage (Branch B — sound-design).
 
-Branch B treats a "complex voicing" as a spectral/timbre object (detuning, filter
-movement, FM inharmonicity, layering) rather than a chord. Per the spec this is
-implemented as a stub with the interface only, so it can be filled in without
-touching the rest of the pipeline. The kernel/assembler already carry a
-``timbre`` slot on every segment.
+Branch B treats a "complex voicing" as a spectral/timbre object — detuning,
+filter movement, FM inharmonicity, layering — rather than a chord. It runs
+beside the harmony branch over the same chord spans and fills the ``timbre``
+slot the IR carries on every segment.
+
+:class:`SpectralTimbre` is the real extractor (numpy only — no extras needed);
+:class:`TimbreStub` is the explicit "not measured" path.
 """
 
-from .descriptor import TimbreStub
+from .descriptor import SpectralTimbre, TimbreStub, build_timbre, describe_tags
 
-__all__ = ["TimbreStub"]
+__all__ = ["SpectralTimbre", "TimbreStub", "build_timbre", "describe_tags"]

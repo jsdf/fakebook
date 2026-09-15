@@ -111,13 +111,25 @@ class Voicing(_Model):
 
 
 class TimbreDescriptor(_Model):
-    """Branch B (sound-design) descriptor. Populated by the ``timbre`` stub."""
+    """Branch B (sound-design) descriptor, measured by the ``timbre`` stage.
 
-    spectral_centroid_hz: Optional[float] = None
-    spectral_bandwidth_hz: Optional[float] = None
-    inharmonicity: Optional[float] = None
-    detune_cents: Optional[float] = None
-    n_partials: Optional[int] = None
+    Each of the four things the spec calls "complex voicing" in the sound-design
+    sense has a field: ``detune_cents`` (detuning), ``centroid_slope_hz_per_s``
+    (filter movement), ``inharmonicity`` (FM/metallic), ``n_partials``
+    (layering). ``tags`` are deterministic labels thresholded off those numbers —
+    computed, never chosen by the LLM.
+    """
+
+    spectral_centroid_hz: Optional[float] = None  # brightness
+    spectral_bandwidth_hz: Optional[float] = None  # spread about the centroid
+    spectral_flatness: Optional[float] = None  # ~0 tonal, ->1 noise-like
+    centroid_slope_hz_per_s: Optional[float] = None  # filter movement over the span
+    inharmonicity: Optional[float] = None  # deviation from the dominant series
+    harmonic_ratio: Optional[float] = None  # 1.0 = one harmonic source explains it
+    detune_cents: Optional[float] = None  # unison spread; a lower bound
+    n_partials: Optional[int] = None  # resolved partials (layering density)
+    f0_hz: Optional[float] = None  # HPS estimate the deviations are measured against
+    tags: list[str] = Field(default_factory=list)
     notes: str = ""
 
 

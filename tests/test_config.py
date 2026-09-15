@@ -1,3 +1,5 @@
+import json
+
 from fakebook.config import Config
 
 
@@ -28,3 +30,18 @@ def test_user_yaml_override(tmp_path):
     assert c.get("harmony.max_scale_candidates") == 9
     # untouched keys remain
     assert c.get("harmony.max_chord_interpretations") == 5
+
+
+def test_cli_applies_env_overrides(monkeypatch, capsys):
+    # The CLI must follow the documented layering (defaults -> YAML -> env) even
+    # with no --config; it used to fall back to Config.default(), which silently
+    # dropped every FAKEBOOK_* override.
+    import argparse
+
+    from fakebook.cli import _cmd_kernel
+
+    monkeypatch.setenv("FAKEBOOK_HARMONY__MAX_CHORD_INTERPRETATIONS", "1")
+    args = argparse.Namespace(config=None, pitch_classes=["0", "4", "7", "10"], duration=2.0)
+    assert _cmd_kernel(args) == 0
+    seg = json.loads(capsys.readouterr().out)
+    assert len(seg["chord_interpretations"]) == 1  # capped by the env override

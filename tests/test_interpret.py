@@ -28,6 +28,12 @@ def _document():
                 "scale_candidates": [{"name": "C dorian", "fit": 1.0}],
                 "voicing": {"stacking": "tertian"},
                 "coarse_acr": "C:min",
+                "timbre": {
+                    "spectral_centroid_hz": 3165.8,
+                    "detune_cents": 47.8,
+                    "harmonic_ratio": 0.66,
+                    "tags": ["bright", "detuned unison (supersaw-like)"],
+                },
             }
         ],
     }
@@ -37,6 +43,17 @@ def test_prompt_includes_only_needed_fields():
     prompt = build_user_prompt(_document())
     assert "chord_interpretations" in prompt
     assert "Cm7" in prompt
+
+
+def test_prompt_carries_branch_b_descriptors():
+    # Branch B is context the model may explain but not derive harmony from; the
+    # guardrail for that is stated in the system prompt, so both must be present.
+    from fakebook.interpret.prompt import SYSTEM_PROMPT
+
+    prompt = build_user_prompt(_document())
+    assert "detuned unison (supersaw-like)" in prompt
+    assert "harmonic_ratio" in prompt
+    assert "timbre" in SYSTEM_PROMPT and "SINGLE-SOURCE" in SYSTEM_PROMPT
 
 
 def test_valid_selection_passes_through():

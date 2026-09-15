@@ -42,10 +42,14 @@ were chosen on purpose:
 - **Branch A — Harmonic** (extensions, chord-scale color, reharmonization),
   served by the chroma/salience → theory-kernel path. **Built as primary.**
 - **Branch B — Sound-design** (detuning, filter movement, FM inharmonicity,
-  layering), a spectral/timbre object rather than a chord. **Implemented as a
-  stub behind a stable `timbre/` interface** so it can be filled in without
-  touching the rest of the pipeline. If your real target is B, flip the
-  emphasis — the scaffolding and assembly stages are shared.
+  layering), a spectral/timbre object rather than a chord. **Built**, over the
+  same chord spans, into the `timbre` slot every segment carries. It needs no
+  optional extras — the whole descriptor is `np.fft` over audio the pipeline
+  already has in memory.
+
+Both branches run side by side on the same spans, so a segment reads as
+*"Cm11, supersaw-wide unison, filter opening"* rather than forcing a choice
+between the two senses of "complex voicing".
 
 ---
 
@@ -59,7 +63,9 @@ audio clip
         ├─ harmony/   [Branch A] salience/chroma → pitch-class collection
         │              → music21 kernel: pc-set + spelled pitch, chord/scale
         │                enumeration, quartal / upper-structure detection
-        └─ timbre/    [Branch B — stub] spectral descriptor (interface only)
+        └─ timbre/    [Branch B] STFT → centroid/bandwidth/flatness, partial
+                       tracking → detuning · inharmonicity · layering · filter
+                       movement, plus thresholded sound-design tags
   └─ assemble/      merge into one validated JSON document (the IR)
   └─ interpret/     LLM over the grounded IR → interpretation, competing hearings, idioms
 ```
@@ -128,6 +134,38 @@ $ fakebook kernel 0 4 7 10 3        # C E G Bb D#  — the "Hendrix" chord
 }
 ```
 
+### Branch B: what a segment's `timbre` block looks like
+
+Every segment carries a measured sound-design descriptor beside its harmonic
+reading (a 7-voice supersaw, detuned ±25 cents, under an opening filter):
+
+```jsonc
+{
+  "spectral_centroid_hz": 1517.9,   // brightness
+  "spectral_bandwidth_hz": 1242.7,  // spread about the centroid
+  "spectral_flatness": 0.0,         // ~0 tonal, ->1 noise-like
+  "centroid_slope_hz_per_s": 829.9, // filter movement: the cutoff opening
+  "inharmonicity": 0.0129,          // deviation from the dominant harmonic series
+  "harmonic_ratio": 0.64,           // how much of the energy that one series explains
+  "detune_cents": 48.4,             // unison spread (true spread: 50)
+  "n_partials": 47,                 // resolved partials — layering density
+  "f0_hz": 445.6,
+  "tags": ["detuned unison (supersaw-like)", "filter opening", "dense/layered"]
+}
+```
+
+`tags` are assigned here, by fixed thresholds — the LLM may explain a tag, never
+assign one. `detune_cents` is evidence of a unison rather than a calibrated
+figure: unresolved voices make it under-read, and on a dense chord another note's
+partial can widen — or break up — a cluster. The limit that matters most is
+stated rather than papered over:
+`inharmonicity` is a *single-source* number, so a dense chord of perfectly
+harmonic oscillators raises it too. That is why the tag is the neutral
+`off-series partials` and why `harmonic_ratio` ships beside it — and why the
+disambiguation happens at interpretation time, where the *other* branch is
+visible: off-series partials over five pitch classes is polyphony, the same tag
+over one or two is a genuinely inharmonic patch.
+
 ### Full pipeline
 
 ```bash
@@ -179,6 +217,17 @@ Ground truth is scarce for this material, so validation is layered:
 - **Audio heads** — intended checks are key/tempo against known tracks and
   beat-tracking F-measure on annotated clips (require the `audio`/`mir` extras).
 
+- **Branch B descriptors** — `tests/test_timbre.py` synthesizes patches whose
+  ground truth is known by construction (an additive saw is exactly harmonic; a
+  7-voice unison is detuned by exactly N cents; FM on an irrational ratio is
+  genuinely inharmonic) and checks both the recovered value and the separation
+  between patches: the detune estimate lands within a few cents of the true
+  spread and orders correctly with it, a saw reads harmonic to 1e-5 while FM
+  reads three orders higher, sweep direction is recovered, and the false
+  positives that cost the most are pinned shut — noise is not a unison, FM
+  sidebands are not a unison, unison beating is not a filter sweep, and
+  polyphony is not an FM claim.
+
 - **Audio integration** — `tests/test_integration_audio.py` renders known chords
   to a signal and drives the *real* front-end (librosa CQT chroma → kernel, the
   MIR key head, and a full `analyze_file` from a written WAV), checking that the
@@ -206,7 +255,7 @@ pip install -e '.[audio]' && pytest   # + real-audio integration tests
 | 3     | `harmony/` kernel (Branch A)                      | ✅ (fully tested) |
 | 4     | `assemble/` → validated JSON                      | ✅ |
 | 5     | `interpret/` LLM guardrail layer                  | ✅ |
-| 6     | `timbre/` (Branch B)                              | ◻️ stub behind stable interface |
+| 6     | `timbre/` (Branch B)                              | ✅ (numpy-only spectral descriptors) |
 
 Stages that wrap heavy models (demucs separation, MERT probing, basic-pitch
 salience) are written against their real APIs behind the contract interfaces;

@@ -231,10 +231,20 @@ def test_hpss_separator_keeps_harmony_and_still_names_chords():
     assert seg.chord_interpretations[0].name in ("Cm7", "Eb6")
 
 
-def test_build_separator_prefers_hpss_when_librosa_present():
-    from fakebook.separation import HpssSeparator, build_separator
+def test_build_separator_prefers_hpss_when_librosa_present(monkeypatch):
+    from fakebook.separation import HpssSeparator, build_separator, separator as separator_mod
 
-    # default backend is demucs; with torch/demucs absent but librosa present,
-    # build_separator should degrade to HPSS rather than raw passthrough.
-    sep = build_separator(Config.default())
-    assert isinstance(sep, HpssSeparator)
+    # Default backend is demucs; with torch/demucs absent but librosa present,
+    # build_separator should degrade to HPSS rather than raw passthrough. The
+    # availability probe is patched rather than read from the environment, so
+    # the degradation path is tested whether or not demucs happens to be
+    # installed here.
+    monkeypatch.setattr(separator_mod, "is_available", lambda module: module == "librosa")
+    assert isinstance(build_separator(Config.default()), HpssSeparator)
+
+
+def test_build_separator_uses_demucs_when_it_is_available(monkeypatch):
+    from fakebook.separation import DemucsSeparator, build_separator, separator as separator_mod
+
+    monkeypatch.setattr(separator_mod, "is_available", lambda module: True)
+    assert isinstance(build_separator(Config.default()), DemucsSeparator)

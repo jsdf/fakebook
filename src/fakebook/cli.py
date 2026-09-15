@@ -22,7 +22,8 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
     from .assemble import Assembler
     from .pipeline import Pipeline
 
-    config = Config.load(args.config) if args.config else Config.default()
+    # Config.load handles a None path: packaged defaults + FAKEBOOK_* env overrides.
+    config = Config.load(args.config)
     pipeline = Pipeline.from_config(config)
     doc = pipeline.analyze_file(args.audio, interpret=args.interpret)
 
@@ -45,7 +46,8 @@ def _cmd_kernel(args: argparse.Namespace) -> int:
     from .contracts import ChordSpan, PitchClassObservation
     from .harmony import HarmonyKernel
 
-    config = Config.load(args.config) if args.config else Config.default()
+    # Config.load handles a None path: packaged defaults + FAKEBOOK_* env overrides.
+    config = Config.load(args.config)
     kernel = HarmonyKernel(config)
     obs = PitchClassObservation(
         span=ChordSpan(start_s=0.0, end_s=float(args.duration), bar=1),

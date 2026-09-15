@@ -44,7 +44,19 @@ harmony:
   detect_upper_structure: true
 
 timbre:
-  enabled: false                 # Branch B — stub only for now
+  enabled: true                  # Branch B — spectral/sound-design descriptors
+  backend: spectral              # spectral | stub
+  # Long window: detuning between unison voices is tens of cents, so frequency
+  # resolution is worth more here than time resolution on sustained synths.
+  n_fft: 8192
+  hop_length: 2048
+  peak_threshold: 0.05           # partial floor, relative to the strongest peak
+  peak_fmax: 8000.0              # ignore air/noise band when counting partials
+  max_peaks: 64
+  cluster_cents: 70.0            # below a semitone, so separate notes never fuse
+  min_split_ratio: 0.5           # a unison splits every partial, not just one
+  f0_min: 40.0
+  f0_max: 1200.0
 
 interpret:
   model: claude-opus-4-8

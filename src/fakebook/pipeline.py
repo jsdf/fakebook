@@ -5,7 +5,7 @@ stage can be swapped (real ↔ fallback ↔ stub) without changing this file. Th
 data flow mirrors the architecture in the spec:
 
     ingest → separation → mir ─┬─ harmony (salience → kernel) → assemble → interpret
-                               └─ timbre (Branch B stub)
+                               └─ timbre (Branch B spectral descriptors)
 
 Two entry points:
 
@@ -60,9 +60,9 @@ class Pipeline:
         from .ingest import AudioLoader
         from .mir import build_mir_analyzer
         from .separation import build_separator
-        from .timbre import TimbreStub
+        from .timbre import build_timbre
 
-        timbre = TimbreStub(config) if config.get("timbre.enabled", False) else None
+        timbre = build_timbre(config)
         interpreter = None
         return cls(
             config=config,

@@ -373,7 +373,7 @@
     },
     "TimbreDescriptor": {
       "additionalProperties": false,
-      "description": "Branch B (sound-design) descriptor. Populated by the ``timbre`` stub.",
+      "description": "Branch B (sound-design) descriptor, measured by the ``timbre`` stage.\n\nEach of the four things the spec calls \"complex voicing\" in the sound-design\nsense has a field: ``detune_cents`` (detuning), ``centroid_slope_hz_per_s``\n(filter movement), ``inharmonicity`` (FM/metallic), ``n_partials``\n(layering). ``tags`` are deterministic labels thresholded off those numbers \u2014\ncomputed, never chosen by the LLM.",
       "properties": {
         "spectral_centroid_hz": {
           "anyOf": [
@@ -399,6 +399,30 @@
           "default": null,
           "title": "Spectral Bandwidth Hz"
         },
+        "spectral_flatness": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Spectral Flatness"
+        },
+        "centroid_slope_hz_per_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Centroid Slope Hz Per S"
+        },
         "inharmonicity": {
           "anyOf": [
             {
@@ -410,6 +434,18 @@
           ],
           "default": null,
           "title": "Inharmonicity"
+        },
+        "harmonic_ratio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Harmonic Ratio"
         },
         "detune_cents": {
           "anyOf": [
@@ -434,6 +470,25 @@
           ],
           "default": null,
           "title": "N Partials"
+        },
+        "f0_hz": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "F0 Hz"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
         },
         "notes": {
           "default": "",
