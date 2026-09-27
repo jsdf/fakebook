@@ -47,6 +47,11 @@ harmony = [
 llm = [
     "anthropic>=0.40",
 ]
+# Reference-corpus evaluation harness (validation only, not the pipeline).
+corpus = [
+    "mirdata>=0.3",
+    "mir_eval>=0.7",
+]
 dev = [
     "pytest>=7.4",
     "pytest-cov>=4.1",
@@ -55,7 +60,7 @@ dev = [
 ]
 # Convenience: the full audio→interpretation pipeline.
 all = [
-    "fakebook[audio,mir,harmony,llm]",
+    "fakebook[audio,mir,harmony,llm,corpus]",
 ]
 
 [project.scripts]

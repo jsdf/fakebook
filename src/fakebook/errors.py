@@ -30,3 +30,25 @@ class SchemaValidationError(FakebookError):
 
 class InterpretationError(FakebookError):
     """The LLM interpretation stage failed or violated a guardrail."""
+
+
+class CorpusUnavailableError(FakebookError):
+    """A reference corpus could not be fetched or read.
+
+    Carries the hosts a download needs, because the usual cause in a sandboxed
+    environment is an egress policy denying one of them — which is fixable, but
+    only if the message says which host to allow.
+    """
+
+    def __init__(self, corpus: str, hosts: tuple[str, ...], reason: str = ""):
+        self.corpus = corpus
+        self.hosts = hosts
+        self.reason = reason
+        host_list = ", ".join(hosts) if hosts else "its download hosts"
+        detail = f" ({reason})" if reason else ""
+        super().__init__(
+            f"corpus '{corpus}' is not available{detail}. "
+            f"It downloads from: {host_list}. If the network denies those hosts, "
+            f"allow them for this environment; if it is already downloaded, point "
+            f"FAKEBOOK_CORPUS_DIR at the cache directory."
+        )

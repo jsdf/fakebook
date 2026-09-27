@@ -16,6 +16,7 @@ import json
 import sys
 
 from .config import Config
+from .errors import FakebookError
 
 
 def _cmd_analyze(args: argparse.Namespace) -> int:
@@ -65,6 +66,28 @@ def _cmd_schema(_args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_evaluate(args: argparse.Namespace) -> int:
+    from .corpus import REGISTRY, evaluate_corpus, load_corpus
+
+    if args.corpus == "list":
+        for name, sp in sorted(REGISTRY.items()):
+            print(f"{name}\n  material: {sp.material}\n  provides: {', '.join(sorted(sp.provides))}"
+                  f"\n  hosts:    {', '.join(sp.hosts)}\n  notes:    {sp.notes}")
+        return 0
+
+    config = Config.load(args.config)
+    tracks = load_corpus(
+        args.corpus, data_home=args.data_home, download=args.download, limit=args.limit
+    )
+    report = evaluate_corpus(tracks, corpus_name=args.corpus, config=config)
+    if args.output:
+        with open(args.output, "w") as fh:
+            fh.write(report.to_json())
+        print(f"wrote {args.output}", file=sys.stderr)
+    print(report.summary())
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="fakebook", description=__doc__)
     p.add_argument("--config", help="path to a YAML config override")
@@ -83,13 +106,27 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("schema", help="print the IR JSON Schema")
     s.set_defaults(func=_cmd_schema)
+
+    e = sub.add_parser("evaluate", help="score the pipeline against a reference corpus")
+    e.add_argument("corpus", help="corpus name, or 'list' to show what is registered")
+    e.add_argument("--download", action="store_true", help="fetch the corpus first")
+    e.add_argument("--data-home", help="corpus cache dir (default FAKEBOOK_CORPUS_DIR)")
+    e.add_argument("--limit", type=int, help="evaluate only the first N tracks")
+    e.add_argument("-o", "--output", help="write the full per-track report JSON here")
+    e.set_defaults(func=_cmd_evaluate)
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except FakebookError as exc:
+        # Our own errors are written to be read: a missing extra, a corpus whose
+        # download host is blocked. Print the message, not a traceback.
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":  # pragma: no cover

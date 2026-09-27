@@ -96,6 +96,7 @@ Heavy capabilities are optional extras, imported lazily so the core always works
 | `mir`      | MERT/foundation-model backbone, madmom beats        | torch, transformers, madmom      |
 | `harmony`  | basic-pitch multipitch salience                     | basic-pitch                      |
 | `llm`      | the interpret stage                                 | anthropic                        |
+| `corpus`   | reference-corpus evaluation (validation only)       | mirdata, mir_eval                |
 | `all`      | everything above                                    |                                  |
 
 ```bash
@@ -166,6 +167,52 @@ disambiguation happens at interpretation time, where the *other* branch is
 visible: off-series partials over five pitch classes is polyphony, the same tag
 over one or two is a genuinely inharmonic patch.
 
+### Score the pipeline against a reference corpus
+
+```bash
+fakebook evaluate list                                   # what is registered
+fakebook evaluate giantsteps_key --download --limit 50 -o report.json
+```
+
+The report shape (values shown as placeholders — **no corpus has been scored
+yet**, see *Validation* below):
+
+```
+corpus: giantsteps_key
+analyzed: N  missing audio: N  errors: N
+key: exact NN.N%, MIREX weighted N.NNN (n=N)
+     relationships: correct N, fifth N, parallel N, relative N, other N
+tempo: acc1 NN.N%, acc2 NN.N% (n=N)
+```
+
+Registered corpora are chosen for **genre match** first — the target is mixed,
+computer-produced pop/dance, so 604 annotated Beatport/EDM previews beat a larger
+corpus of rock or classical:
+
+| Corpus           | Material                                        | Reference data      |
+|------------------|-------------------------------------------------|---------------------|
+| `giantsteps_key` | 604 × 2-min Beatport previews (EDM)             | key (expert), tempo + genre (store metadata) |
+| `beatport_key`   | 1486 × 2-min Beatport previews (EDM)            | key (multiple annotators), tempo + genre |
+
+Loading, checksums and archive layout are delegated to
+[`mirdata`](https://mirdata.readthedocs.io); [`corpus/`](src/fakebook/corpus)
+adds the registry, MIREX-comparable metrics, and the runner. Audio is **never
+vendored** — it caches under `FAKEBOOK_CORPUS_DIR` (default
+`~/.cache/fakebook/corpus`). Reports are per-track first and aggregate second,
+with the genre label on every row, because the useful question is never the mean
+but *which* tracks failed and what they share.
+
+Two deliberate choices in the metrics: key keeps the **relationship**
+(correct / fifth / relative / parallel / other), since mistaking a key for its
+relative minor is a different bug from a tritone error; and tempo reports
+Accuracy1/Accuracy2 computed from their definitions rather than through
+`mir_eval.tempo.detection`, which expects perceptual tempo *pairs* that this
+ground truth does not have.
+
+A corpus download needs network access to its hosts (Zenodo, for both of the
+above). If that is denied, the harness raises `CorpusUnavailableError` naming the
+host to allow rather than failing deep inside a zip reader.
+
 ### Full pipeline
 
 ```bash
@@ -214,8 +261,19 @@ Ground truth is scarce for this material, so validation is layered:
 - **Coherence checks** (in `assemble/`) — do chord segments align to the
   downbeat grid? Are spans within the clip? Are pc collections non-empty where a
   chord is expected? Findings are advisory warnings attached to the document.
-- **Audio heads** — intended checks are key/tempo against known tracks and
-  beat-tracking F-measure on annotated clips (require the `audio`/`mir` extras).
+- **Not yet measured** — no corpus run has happened. The harness below is built
+  and tested, but the environment it was written in denies the download host, so
+  there are no key/tempo numbers for this pipeline yet. They are one
+  `fakebook evaluate giantsteps_key --download` away on a machine that can reach
+  Zenodo; until then, treat the audio heads as unquantified.
+
+- **Reference corpora** — `fakebook evaluate` scores the real pipeline against
+  annotated EDM corpora (see above): MIREX key score with the error
+  *relationship* broken out, tempo Accuracy1/Accuracy2, and beat F-measure where
+  beat annotations exist. The harness itself is tested without any download — a
+  stub pipeline over fabricated tracks pins the aggregation, the per-track error
+  containment (one corrupt file must not end a 604-track run), and the
+  missing-audio accounting.
 
 - **Branch B descriptors** — `tests/test_timbre.py` synthesizes patches whose
   ground truth is known by construction (an additive saw is exactly harmonic; a
